@@ -5,18 +5,22 @@
 #include <vector>
 #include <helper.h>
 
-GLuint bufID;
+GLuint VBO;
+GLint glScaleLocation;
 
 void CreateVertexBuffer() {
-	float Vertices[] = {
+	float vertexData[] = {
 		-1.0f, -1.0f, 0.0f, 1.0f,
 		 0.0f,  1.0f, 0.0f, 1.0f,
 		 1.0f, -1.0f, 0.0f, 1.0f,
+		 1.0f,  0.0f, 0.0f, 0.0f,
+		 0.0f,  1.0f, 0.0f, 0.0f,
+		 0.0f,  0.0f, 1.0f, 0.0f,
 	};
 
-	glGenBuffers(1, &bufID);
-	glBindBuffer(GL_ARRAY_BUFFER, bufID);
-	glBufferData(GL_ARRAY_BUFFER, sizeof(Vertices), Vertices, GL_STATIC_DRAW);
+	glGenBuffers(1, &VBO);
+	glBindBuffer(GL_ARRAY_BUFFER, VBO);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(vertexData), vertexData, GL_STATIC_DRAW);
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 }
 
@@ -72,6 +76,13 @@ GLuint CreateProgram(const std::vector<GLuint>& shaderList) {
 		exit(1);
 	}
 
+	//compiler will allocate the indices of the uniform at link time
+	glScaleLocation = glGetUniformLocation(program, "gScale");
+	if (glScaleLocation == -1) {
+		fprintf(stderr, "Error getting uniform location 'gScale'\n");
+		exit(1);
+	}
+
 	glValidateProgram(program);
 	glGetProgramiv(program, GL_VALIDATE_STATUS, &status);
 	if (status == GL_FALSE) {
@@ -106,14 +117,20 @@ void InitializeProgram() {
 void RenderSceneCB() {
 	glClear(GL_COLOR_BUFFER_BIT);
 
-	glBindBuffer(GL_ARRAY_BUFFER, bufID);
+	glUniform1f(glScaleLocation, 0.8f);
+
+	glBindBuffer(GL_ARRAY_BUFFER, VBO);
 
 	glEnableVertexAttribArray(0);
+	glEnableVertexAttribArray(1);
 	glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, 0, 0);
+	glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, 0, (void*)48);//4byte*4float*3pos
 	glDrawArrays(GL_TRIANGLES, 0, 3);
 	glDisableVertexAttribArray(0);
+	glDisableVertexAttribArray(1);
 
 	glutSwapBuffers();
+	glutPostRedisplay();
 }
 
 int main(int argc, char** argv) {
