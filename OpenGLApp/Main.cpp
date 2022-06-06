@@ -4,6 +4,7 @@
 #include <string>
 #include <vector>
 #include <helper.h>
+#include <ogldev_math_3d.h>
 
 GLuint VBO;
 GLint gMatrixLocation;
@@ -111,26 +112,42 @@ void InitializeProgram() {
 	glUseProgram(program);
 }
 
+void Transformation() {
+	static float Scale = 0.25f;
+
+	Matrix4f Scaling(Scale, 0.0f,  0.0f,  0.0f,
+                     0.0f,  Scale, 0.0f,  0.0f,
+                     0.0f,  0.0f,  Scale, 0.0f,
+                     0.0f,  0.0f,  0.0f,  1.0f);
+
+	static float AngleInRadians = 0.0f;
+	static float Delta = 0.0001f;
+
+	AngleInRadians += Delta;
+
+	Matrix4f Rotation(cosf(AngleInRadians), -sinf(AngleInRadians), 0.0f, 0.0f,
+                      sinf(AngleInRadians), cosf(AngleInRadians),  0.0f, 0.0f,
+                      0.0,                  0.0f,                  1.0f, 0.0f,
+                      0.0f,                 0.0f,                  0.0f, 1.0f);
+
+	static float Loc = 0.5f;
+
+    Matrix4f Translation(1.0f, 0.0f, 0.0f, Loc,
+                         0.0f, 1.0f, 0.0f, 0.0,
+                         0.0f, 0.0f, 1.0f, 0.0,
+                         0.0f, 0.0f, 0.0f, 1.0f);
+
+
+	Matrix4f FinalTransform = Translation * Rotation * Scaling;
+	
+	//1 matrix and a row-major
+	glUniformMatrix4fv(gMatrixLocation, 1, GL_TRUE, &FinalTransform.m[0][0]);
+}
+
 void RenderSceneCB() {
 	glClear(GL_COLOR_BUFFER_BIT);
 
-	static float Scale = 0.0f;
-	static float Delta = 0.00025f;
-
-	Scale += Delta;
-	if ((Scale >= 1.5f) || (Scale <= -1.5f)) {
-		Delta *= -1.0f;
-	}
-
-	float transation[] = {
-		Scale, 0.0f, 0.0f, 0.0f,
-		0.0f,  Scale, 0.0f, 0.0f,
-		0.0f, 0.0f, Scale, 0.0f,
-		0.0f, 0.0f, 0.0f, 1.0f,
-	};
-
-	//1 matrix and a row-major
-	glUniformMatrix4fv(gMatrixLocation, 1, GL_TRUE, transation);
+	Transformation();
 
 	glBindBuffer(GL_ARRAY_BUFFER, VBO);
 
