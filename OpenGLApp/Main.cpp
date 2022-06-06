@@ -114,18 +114,18 @@ void InitializeProgram() {
 void RenderSceneCB() {
 	glClear(GL_COLOR_BUFFER_BIT);
 
-	static float AngleInRadians = 0.0f;
+	static float Scale = 0.0f;
 	static float Delta = 0.00025f;
 
-	AngleInRadians += Delta;
-	if ((AngleInRadians >= 1.5708f) || (AngleInRadians <= -1.5708f)) {
+	Scale += Delta;
+	if ((Scale >= 1.5f) || (Scale <= -1.5f)) {
 		Delta *= -1.0f;
 	}
 
 	float transation[] = {
-		cosf(AngleInRadians), -sinf(AngleInRadians), 0.0f, 0.0f,
-		sinf(AngleInRadians),  cosf(AngleInRadians), 0.0f, 0.0f,
-		0.0f, 0.0f, 1.0f, 0.0f,
+		Scale, 0.0f, 0.0f, 0.0f,
+		0.0f,  Scale, 0.0f, 0.0f,
+		0.0f, 0.0f, Scale, 0.0f,
 		0.0f, 0.0f, 0.0f, 1.0f,
 	};
 
