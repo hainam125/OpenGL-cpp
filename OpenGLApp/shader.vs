@@ -2,8 +2,8 @@
 
 layout (location = 0) in vec4 Position;
 
-uniform mat4 gTranslation;
+uniform mat4 gMatrix;
 
 void main() {
-	gl_Position = gTranslation * Position;
+	gl_Position = gMatrix * Position;
 }

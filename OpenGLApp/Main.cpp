@@ -6,7 +6,7 @@
 #include <helper.h>
 
 GLuint VBO;
-GLint gTranslationLocation;
+GLint gMatrixLocation;
 
 void CreateVertexBuffer() {
 	float vertexData[] = {
@@ -74,8 +74,8 @@ GLuint CreateProgram(const std::vector<GLuint>& shaderList) {
 	}
 
 	//compiler will allocate the indices of the uniform at link time
-	gTranslationLocation = glGetUniformLocation(program, "gTranslation");
-	if (gTranslationLocation == -1) {
+	gMatrixLocation = glGetUniformLocation(program, "gMatrix");
+	if (gMatrixLocation == -1) {
 		fprintf(stderr, "Error getting uniform location 'gTranslation'\n");
 		exit(1);
 	}
@@ -114,23 +114,23 @@ void InitializeProgram() {
 void RenderSceneCB() {
 	glClear(GL_COLOR_BUFFER_BIT);
 
-	static float Scale = 0.0f;
+	static float AngleInRadians = 0.0f;
 	static float Delta = 0.00025f;
 
-	Scale += Delta;
-	if ((Scale >= 1.0f) || (Scale <= -1.0f)) {
+	AngleInRadians += Delta;
+	if ((AngleInRadians >= 1.5708f) || (AngleInRadians <= -1.5708f)) {
 		Delta *= -1.0f;
 	}
 
 	float transation[] = {
-		1.0f, 0.0f, 0.0f, 0.0f,
-		0.0f, 1.0f, 0.0f, 0.0f,
+		cosf(AngleInRadians), -sinf(AngleInRadians), 0.0f, 0.0f,
+		sinf(AngleInRadians),  cosf(AngleInRadians), 0.0f, 0.0f,
 		0.0f, 0.0f, 1.0f, 0.0f,
-		Scale * 2, Scale, 0.0f, 1.0f,
+		0.0f, 0.0f, 0.0f, 1.0f,
 	};
 
-	//1 matrix and not a row-major (column-major)
-	glUniformMatrix4fv(gTranslationLocation, 1, GL_FALSE, transation);
+	//1 matrix and a row-major
+	glUniformMatrix4fv(gMatrixLocation, 1, GL_TRUE, transation);
 
 	glBindBuffer(GL_ARRAY_BUFFER, VBO);
 
@@ -146,7 +146,7 @@ void RenderSceneCB() {
 int main(int argc, char** argv) {
 	glutInit(&argc, argv);
 	glutInitDisplayMode(GLUT_RGBA | GLUT_DOUBLE);
-	glutInitWindowSize(1920 / 2, 1080 / 2);
+	glutInitWindowSize(1080 / 2, 1080 / 2);
 	glutInitWindowPosition(200, 100);
 	glutCreateWindow("OpenGL");
 
