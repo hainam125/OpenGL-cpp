@@ -6,16 +6,13 @@
 #include <helper.h>
 
 GLuint VBO;
-GLint glScaleLocation;
+GLint gTranslationLocation;
 
 void CreateVertexBuffer() {
 	float vertexData[] = {
 		-1.0f, -1.0f, 0.0f, 1.0f,
 		 0.0f,  1.0f, 0.0f, 1.0f,
 		 1.0f, -1.0f, 0.0f, 1.0f,
-		 1.0f,  0.0f, 0.0f, 0.0f,
-		 0.0f,  1.0f, 0.0f, 0.0f,
-		 0.0f,  0.0f, 1.0f, 0.0f,
 	};
 
 	glGenBuffers(1, &VBO);
@@ -38,7 +35,7 @@ GLuint CreateShader(GLenum eShaderType, const std::string& strShaderFile) {
 	if (status == GL_FALSE) {
 		GLint infoLogLength;
 		glGetShaderiv(shader, GL_INFO_LOG_LENGTH, &infoLogLength);
-		GLchar* strInfoLog = new GLchar[infoLogLength + 1];
+		GLchar* strInfoLog = new GLchar[(LONG64)infoLogLength + 1];
 		glGetShaderInfoLog(shader, infoLogLength, NULL, strInfoLog);
 
 		const char* strShaderType = NULL;
@@ -69,7 +66,7 @@ GLuint CreateProgram(const std::vector<GLuint>& shaderList) {
 	if (status == GL_FALSE) {
 		GLint infoLogLength;
 		glGetProgramiv(program, GL_INFO_LOG_LENGTH, &infoLogLength);
-		GLchar* strInfoLog = new GLchar[infoLogLength + 1];
+		GLchar* strInfoLog = new GLchar[(LONG64)infoLogLength + 1];
 		glGetProgramInfoLog(program, infoLogLength, NULL, strInfoLog);
 		fprintf(stderr, "Link failure: %s\n", strInfoLog);
 		delete[]strInfoLog;
@@ -77,9 +74,9 @@ GLuint CreateProgram(const std::vector<GLuint>& shaderList) {
 	}
 
 	//compiler will allocate the indices of the uniform at link time
-	glScaleLocation = glGetUniformLocation(program, "gScale");
-	if (glScaleLocation == -1) {
-		fprintf(stderr, "Error getting uniform location 'gScale'\n");
+	gTranslationLocation = glGetUniformLocation(program, "gTranslation");
+	if (gTranslationLocation == -1) {
+		fprintf(stderr, "Error getting uniform location 'gTranslation'\n");
 		exit(1);
 	}
 
@@ -88,7 +85,7 @@ GLuint CreateProgram(const std::vector<GLuint>& shaderList) {
 	if (status == GL_FALSE) {
 		GLint infoLogLength;
 		glGetProgramiv(program, GL_INFO_LOG_LENGTH, &infoLogLength);
-		GLchar* strInfoLog = new GLchar[infoLogLength + 1];
+		GLchar* strInfoLog = new GLchar[(LONG64)infoLogLength + 1];
 		glGetProgramInfoLog(program, infoLogLength, NULL, strInfoLog);
 		fprintf(stderr, "Validate failure: %s\n", strInfoLog);
 		delete[]strInfoLog;
@@ -117,17 +114,30 @@ void InitializeProgram() {
 void RenderSceneCB() {
 	glClear(GL_COLOR_BUFFER_BIT);
 
-	glUniform1f(glScaleLocation, 0.8f);
+	static float Scale = 0.0f;
+	static float Delta = 0.00025f;
+
+	Scale += Delta;
+	if ((Scale >= 1.0f) || (Scale <= -1.0f)) {
+		Delta *= -1.0f;
+	}
+
+	float transation[] = {
+		1.0f, 0.0f, 0.0f, 0.0f,
+		0.0f, 1.0f, 0.0f, 0.0f,
+		0.0f, 0.0f, 1.0f, 0.0f,
+		Scale * 2, Scale, 0.0f, 1.0f,
+	};
+
+	//1 matrix and not a row-major (column-major)
+	glUniformMatrix4fv(gTranslationLocation, 1, GL_FALSE, transation);
 
 	glBindBuffer(GL_ARRAY_BUFFER, VBO);
 
 	glEnableVertexAttribArray(0);
-	glEnableVertexAttribArray(1);
 	glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, 0, 0);
-	glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, 0, (void*)48);//4byte*4float*3pos
 	glDrawArrays(GL_TRIANGLES, 0, 3);
 	glDisableVertexAttribArray(0);
-	glDisableVertexAttribArray(1);
 
 	glutSwapBuffers();
 	glutPostRedisplay();
@@ -150,7 +160,7 @@ int main(int argc, char** argv) {
 
 	glEnable(GL_CULL_FACE);
 	glFrontFace(GL_CW);
-	//glCullFace(GL_FRONT);
+	glCullFace(GL_BACK);
 
 	CreateVertexBuffer();
 	InitializeProgram();
