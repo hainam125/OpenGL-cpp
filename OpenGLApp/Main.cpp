@@ -6,6 +6,9 @@
 #include <helper.h>
 #include <ogldev_math_3d.h>
 
+#define WINDOW_WIDTH  960
+#define WINDOW_HEIGHT 540
+
 GLuint VBO;
 GLuint IBO;
 GLint gMatrixLocation;
@@ -180,9 +183,14 @@ void Transformation() {
 	float FOV = 90.0f;
 	float tanHalfFOV = tanf(ToRadian(FOV / 2.0f));
 	float f = 1 / tanHalfFOV;
-	Matrix4f Projection(f   , 0.0f, 0.0f, 0.0f,
+	float ar = (float)WINDOW_WIDTH / (float)WINDOW_HEIGHT;
+	float nearZ = 1.0f;
+	float farZ = 10.0f;
+	float A = (farZ + nearZ) / (farZ - nearZ);
+	float B = -2.0f * farZ * nearZ / (farZ - nearZ);
+	Matrix4f Projection(f/ar, 0.0f, 0.0f, 0.0f,
                         0.0f, f   , 0.0f, 0.0f,
-                        0.0f, 0.0f, 1.0f, 0.0f,
+                        0.0f, 0.0f, A   ,    B,
                         0.0f, 0.0f, 1.0f, 0.0f);
 
 	Matrix4f FinalTransform = Projection * Translation * Rotation * Scaling;
@@ -225,7 +233,7 @@ int main(int argc, char** argv) {
 
 	glutInit(&argc, argv);
 	glutInitDisplayMode(GLUT_RGBA | GLUT_DOUBLE);
-	glutInitWindowSize(1080 / 2, 1080 / 2);
+	glutInitWindowSize(WINDOW_WIDTH, WINDOW_HEIGHT);
 	glutInitWindowPosition(200, 100);
 	glutCreateWindow("OpenGL");
 
