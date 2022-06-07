@@ -20,7 +20,6 @@
 #define _USE_MATH_DEFINES
 #endif
 #include <cmath>
-#else
 #include <math.h>
 #endif
 #include <stdio.h>

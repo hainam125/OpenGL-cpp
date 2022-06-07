@@ -17,8 +17,8 @@ struct Vertex
 
 	Vertex(){}
 
-	Vertex(float x, float y) {
-		pos = Vector3f(x, y, 0.0f);
+	Vertex(float x, float y, float z) {
+		pos = Vector3f(x, y, z);
 		float r = (float)rand() / (float)RAND_MAX;
 		float g = (float)rand() / (float)RAND_MAX;
 		float b = (float)rand() / (float)RAND_MAX;
@@ -27,30 +27,16 @@ struct Vertex
 };
 
 void CreateVertexBuffer() {
-	//rectangular
-	Vertex vertices[19];
-	//Center
-	vertices[0] = Vertex(0.0f, 0.0f);
-	//Top row
-	vertices[1] = Vertex(-1.00f, 1.0f);
-	vertices[2] = Vertex(-0.75f, 1.0f);
-	vertices[3] = Vertex(-0.50f, 1.0f);
-	vertices[4] = Vertex(-0.25f, 1.0f);
-	vertices[5] = Vertex( 0.00f, 1.0f);
-	vertices[6] = Vertex( 0.25f, 1.0f);
-	vertices[7] = Vertex( 0.50f, 1.0f);
-	vertices[8] = Vertex( 0.75f, 1.0f);
-	vertices[9] = Vertex( 1.00f, 1.0f);
-	//Bttom row
-	vertices[10] = Vertex(-1.00f, -1.0f);
-	vertices[11] = Vertex(-0.75f, -1.0f);
-	vertices[12] = Vertex(-0.50f, -1.0f);
-	vertices[13] = Vertex(-0.25f, -1.0f);
-	vertices[14] = Vertex( 0.00f, -1.0f);
-	vertices[15] = Vertex( 0.25f, -1.0f);
-	vertices[16] = Vertex( 0.50f, -1.0f);
-	vertices[17] = Vertex( 0.75f, -1.0f);
-	vertices[18] = Vertex( 1.00f, -1.0f);
+	Vertex vertices[8];
+
+	vertices[0] = Vertex( 0.5f,  0.5f,  0.5f);
+	vertices[1] = Vertex(-0.5f,  0.5f, -0.5f);
+	vertices[2] = Vertex(-0.5f,  0.5f,  0.5f);
+	vertices[3] = Vertex( 0.5f, -0.5f, -0.5f);
+	vertices[4] = Vertex(-0.5f, -0.5f, -0.5f);
+	vertices[5] = Vertex( 0.5f,  0.5f, -0.5f);
+	vertices[6] = Vertex( 0.5f, -0.5f,  0.5f);
+	vertices[7] = Vertex(-0.5f, -0.5f,  0.5f);
 
 	glGenBuffers(1, &VBO);
 	glBindBuffer(GL_ARRAY_BUFFER, VBO);
@@ -60,28 +46,18 @@ void CreateVertexBuffer() {
 
 void CreateIndexBuffer() {
 	unsigned int indices[] = {
-		// Top triangles
-		0, 2, 1,
-		0, 3, 2,
-		0, 4, 3,
-		0, 5, 4,
-		0, 6, 5,
+		0, 1, 2,
+		1, 3, 4,
+		5, 6, 3,
+		7, 3, 6,
+		2, 4, 7,
 		0, 7, 6,
-		0, 8, 7,
-		0, 9, 8,
-		// Bottom triangles
-		0, 10, 11,
-		0, 11, 12,
-		0, 12, 13,
-		0, 13, 14,
-		0, 14, 15,
-		0, 15, 16,
-		0, 16, 17,
-		0, 17, 18,
-		// Left triangle
-		0, 1, 10,
-		// Right triangle
-		0, 18, 9
+		0, 5, 1,
+		1, 5, 3,
+		5, 0, 6,
+		7, 4, 3,
+		2, 1, 4,
+		0, 2, 7
 	};
 
 	glGenBuffers(1, &IBO);
@@ -182,31 +158,34 @@ void InitializeProgram() {
 
 void Transformation() {
 	static float Scale = 1.0f;
-
 	Matrix4f Scaling(Scale, 0.0f,  0.0f,  0.0f,
                      0.0f,  Scale, 0.0f,  0.0f,
                      0.0f,  0.0f,  Scale, 0.0f,
                      0.0f,  0.0f,  0.0f,  1.0f);
 
 	static float AngleInRadians = 0.0f;
-	static float Delta = 0.0001f;
+	static float Delta = 0.001f;
+	AngleInRadians += Delta;
+	Matrix4f Rotation(cosf(AngleInRadians), 0.0f, -sinf(AngleInRadians), 0.0f,
+                      0.0                 , 1.0f,  0.0f                , 0.0f,
+                      sinf(AngleInRadians), 0.0f,  cosf(AngleInRadians), 0.0f,
+                      0.0f                , 0.0f,  0.0f                , 1.0f);
 
-	//AngleInRadians += Delta;
-
-	Matrix4f Rotation(cosf(AngleInRadians), -sinf(AngleInRadians), 0.0f, 0.0f,
-                      sinf(AngleInRadians),  cosf(AngleInRadians), 0.0f, 0.0f,
-                      0.0,                  0.0f,                  1.0f, 0.0f,
-                      0.0f,                 0.0f,                  0.0f, 1.0f);
-
-	static float Loc = 0.0f;
-
-    Matrix4f Translation(1.0f, 0.0f, 0.0f, Loc,
-                         0.0f, 1.0f, 0.0f, 0.0,
-                         0.0f, 0.0f, 1.0f, 0.0,
+	static float Loc = 2.5f;
+    Matrix4f Translation(1.0f, 0.0f, 0.0f, 0.0f,
+                         0.0f, 1.0f, 0.0f, 0.0f,
+                         0.0f, 0.0f, 1.0f, Loc,
                          0.0f, 0.0f, 0.0f, 1.0f);
 
+	float FOV = 90.0f;
+	float tanHalfFOV = tanf(ToRadian(FOV / 2.0f));
+	float f = 1 / tanHalfFOV;
+	Matrix4f Projection(f   , 0.0f, 0.0f, 0.0f,
+                        0.0f, f   , 0.0f, 0.0f,
+                        0.0f, 0.0f, 1.0f, 0.0f,
+                        0.0f, 0.0f, 1.0f, 0.0f);
 
-	Matrix4f FinalTransform = Translation * Rotation * Scaling;
+	Matrix4f FinalTransform = Projection * Translation * Rotation * Scaling;
 	
 	//1 matrix and a row-major
 	glUniformMatrix4fv(gMatrixLocation, 1, GL_TRUE, &FinalTransform.m[0][0]);
@@ -230,8 +209,8 @@ void RenderSceneCB() {
 	//offset: start after 3 floats of position
 	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
 
-	//draw using index buffer: 18 triangle ~ 54 indices
-	glDrawElements(GL_TRIANGLES, 54, GL_UNSIGNED_INT, 0);
+	//draw using index buffer: 12 triangle ~ 36 indices
+	glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, 0);
 
 	glDisableVertexAttribArray(0);
 	glDisableVertexAttribArray(1);
@@ -246,7 +225,7 @@ int main(int argc, char** argv) {
 
 	glutInit(&argc, argv);
 	glutInitDisplayMode(GLUT_RGBA | GLUT_DOUBLE);
-	glutInitWindowSize(1920 / 2, 1080 / 2);
+	glutInitWindowSize(1080 / 2, 1080 / 2);
 	glutInitWindowPosition(200, 100);
 	glutCreateWindow("OpenGL");
 
@@ -259,7 +238,7 @@ int main(int argc, char** argv) {
 	glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
 
 	glEnable(GL_CULL_FACE);
-	glFrontFace(GL_CCW);
+	glFrontFace(GL_CW);
 	glCullFace(GL_BACK);
 
 	CreateVertexBuffer();
