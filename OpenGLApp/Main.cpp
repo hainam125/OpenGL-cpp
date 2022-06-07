@@ -174,11 +174,25 @@ void Transformation() {
                       sinf(AngleInRadians), 0.0f,  cosf(AngleInRadians), 0.0f,
                       0.0f                , 0.0f,  0.0f                , 1.0f);
 
-	static float Loc = 2.5f;
-    Matrix4f Translation(1.0f, 0.0f, 0.0f, 0.0f,
-                         0.0f, 1.0f, 0.0f, 0.0f,
-                         0.0f, 0.0f, 1.0f, Loc,
+	Vector3f Loc(0.0f, 0.f, 2.5f);
+    Matrix4f Translation(1.0f, 0.0f, 0.0f, Loc.x,
+                         0.0f, 1.0f, 0.0f, Loc.y,
+                         0.0f, 0.0f, 1.0f, Loc.z,
                          0.0f, 0.0f, 0.0f, 1.0f);
+
+	Matrix4f World = Translation * Rotation * Scaling;
+
+	Vector3f CameraPos(0.0f, 1.0f, -1.0f);
+	Vector3f U(1.0f, 0.0f, 0.0f);
+	Vector3f V(0.0f, 1.0f, 0.0f);
+	Vector3f N(0.0f, 0.0f, 1.0f);
+
+	//invert(CamToWorld)*Translate(-CamPos) [invert ~ transpose]
+	//[CamToWorld is orthonormal(linear independent/length each col = 1)]
+	Matrix4f Camera( U.x,  U.y,  U.z, -CameraPos.x,
+                     V.x,  V.y,  V.z, -CameraPos.y,
+                     N.x,  N.y,  N.z, -CameraPos.z,
+                    0.0f, 0.0f, 0.0f,  1.0f       );
 
 	float FOV = 90.0f;
 	float tanHalfFOV = tanf(ToRadian(FOV / 2.0f));
@@ -193,7 +207,7 @@ void Transformation() {
                         0.0f, 0.0f, A   ,    B,
                         0.0f, 0.0f, 1.0f, 0.0f);
 
-	Matrix4f FinalTransform = Projection * Translation * Rotation * Scaling;
+	Matrix4f FinalTransform = Projection * Camera * World;
 	
 	//1 matrix and a row-major
 	glUniformMatrix4fv(gMatrixLocation, 1, GL_TRUE, &FinalTransform.m[0][0]);
