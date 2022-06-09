@@ -189,10 +189,15 @@ void Transformation() {
 
 	//invert(CamToWorld)*Translate(-CamPos) [invert ~ transpose]
 	//[CamToWorld is orthonormal(linear independent/length each col = 1)]
-	Matrix4f Camera( U.x,  U.y,  U.z, -CameraPos.x,
-                     V.x,  V.y,  V.z, -CameraPos.y,
-                     N.x,  N.y,  N.z, -CameraPos.z,
-                    0.0f, 0.0f, 0.0f,  1.0f       );
+	Matrix4f CameraRotation( U.x,  U.y,  U.z, 0.0f,
+							 V.x,  V.y,  V.z, 0.0f,
+							 N.x,  N.y,  N.z, 0.0f,
+						    0.0f, 0.0f, 0.0f, 1.0f);
+	Matrix4f CameraTranslate(1.0f, 0.0f, 0.0f, -CameraPos.x,
+						     0.0f, 1.0f, 0.0f, -CameraPos.y,
+						     0.0f, 0.0f, 1.0f, -CameraPos.z,
+						     0.0f, 0.0f, 0.0f,  1.0f);
+	Matrix4f Camera = CameraRotation * CameraTranslate;
 
 	float FOV = 90.0f;
 	float tanHalfFOV = tanf(ToRadian(FOV / 2.0f));
