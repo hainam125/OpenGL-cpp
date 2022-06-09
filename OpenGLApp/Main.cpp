@@ -6,12 +6,23 @@
 #include <helper.h>
 #include <ogldev_math_3d.h>
 
+#include "camera.h"
+#include "WorldTransform.h"
+
 #define WINDOW_WIDTH  960
 #define WINDOW_HEIGHT 540
 
 GLuint VBO;
 GLuint IBO;
 GLint gMatrixLocation;
+
+WorldTransform CubeTransform;
+Camera MainCamera;
+
+float FOV = 90.0f;
+float nearZ = 1.0f;
+float farZ = 10.0f;
+PersProjInfo persProjInfo = { FOV, WINDOW_WIDTH, WINDOW_HEIGHT, nearZ, farZ };
 
 struct Vertex
 {
@@ -28,6 +39,14 @@ struct Vertex
 		color = Vector3f(r, g, b);
 	}
 };
+
+void KeyboardCB(unsigned char key, int mouseX, int mouseY) {
+	MainCamera.OnKeyBoard(key);
+}
+
+void SpecialKeyboardCB(int key, int mouseX, int mouseY) {
+	MainCamera.OnKeyBoard(key);
+}
 
 void CreateVertexBuffer() {
 	Vertex vertices[8];
@@ -160,58 +179,14 @@ void InitializeProgram() {
 }
 
 void Transformation() {
-	static float Scale = 1.0f;
-	Matrix4f Scaling(Scale, 0.0f,  0.0f,  0.0f,
-                     0.0f,  Scale, 0.0f,  0.0f,
-                     0.0f,  0.0f,  Scale, 0.0f,
-                     0.0f,  0.0f,  0.0f,  1.0f);
+	CubeTransform.SetPosition(0.0f, 0.f, 2.5f);
+	CubeTransform.Rotate(0.0f, 0.05f, 0.0f);
+	Matrix4f World = CubeTransform.GetMatrix();
 
-	static float AngleInRadians = 0.0f;
-	static float Delta = 0.001f;
-	AngleInRadians += Delta;
-	Matrix4f Rotation(cosf(AngleInRadians), 0.0f, -sinf(AngleInRadians), 0.0f,
-                      0.0                 , 1.0f,  0.0f                , 0.0f,
-                      sinf(AngleInRadians), 0.0f,  cosf(AngleInRadians), 0.0f,
-                      0.0f                , 0.0f,  0.0f                , 1.0f);
+	Matrix4f Camera = MainCamera.GetMatrix();
 
-	Vector3f Loc(0.0f, 0.f, 2.5f);
-    Matrix4f Translation(1.0f, 0.0f, 0.0f, Loc.x,
-                         0.0f, 1.0f, 0.0f, Loc.y,
-                         0.0f, 0.0f, 1.0f, Loc.z,
-                         0.0f, 0.0f, 0.0f, 1.0f);
-
-	Matrix4f World = Translation * Rotation * Scaling;
-
-	Vector3f CameraPos(0.0f, 1.0f, -1.0f);
-	Vector3f U(1.0f, 0.0f, 0.0f);
-	Vector3f V(0.0f, 1.0f, 0.0f);
-	Vector3f N(0.0f, 0.0f, 1.0f);
-
-	//invert(CamToWorld)*Translate(-CamPos) [invert ~ transpose]
-	//[CamToWorld is orthonormal(linear independent/length each col = 1)]
-	Matrix4f CameraRotation( U.x,  U.y,  U.z, 0.0f,
-							 V.x,  V.y,  V.z, 0.0f,
-							 N.x,  N.y,  N.z, 0.0f,
-						    0.0f, 0.0f, 0.0f, 1.0f);
-	Matrix4f CameraTranslate(1.0f, 0.0f, 0.0f, -CameraPos.x,
-						     0.0f, 1.0f, 0.0f, -CameraPos.y,
-						     0.0f, 0.0f, 1.0f, -CameraPos.z,
-						     0.0f, 0.0f, 0.0f,  1.0f);
-	Matrix4f Camera = CameraRotation * CameraTranslate;
-
-	float FOV = 90.0f;
-	float tanHalfFOV = tanf(ToRadian(FOV / 2.0f));
-	float f = 1 / tanHalfFOV;
-	float ar = (float)WINDOW_WIDTH / (float)WINDOW_HEIGHT;
-	float nearZ = 1.0f;
-	float farZ = 10.0f;
-	float A = (farZ + nearZ) / (farZ - nearZ);
-	float B = -2.0f * farZ * nearZ / (farZ - nearZ);
-	Matrix4f Projection(f/ar, 0.0f, 0.0f, 0.0f,
-                        0.0f, f   , 0.0f, 0.0f,
-                        0.0f, 0.0f, A   ,    B,
-                        0.0f, 0.0f, 1.0f, 0.0f);
-
+	Matrix4f Projection;
+	Projection.InitPersProjTransform(persProjInfo);
 	Matrix4f FinalTransform = Projection * Camera * World;
 	
 	//1 matrix and a row-major
@@ -273,6 +248,8 @@ int main(int argc, char** argv) {
 	InitializeProgram();
 
 	glutDisplayFunc(RenderSceneCB);
+	glutKeyboardFunc(KeyboardCB);
+	glutSpecialFunc(SpecialKeyboardCB);
 	glutMainLoop();
 
 	return 0;
