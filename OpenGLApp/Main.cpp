@@ -17,7 +17,10 @@ GLuint IBO;
 GLint gMatrixLocation;
 
 WorldTransform CubeTransform;
-Camera MainCamera;
+Vector3f CameraPos(0.0f, 0.0f, -1.0f);
+Vector3f CameraTarget(0.0f, 0.0f, 1.0f);
+Vector3f CameraUp(0.0f, 1.0f, 0.0f);
+Camera MainCamera(WINDOW_WIDTH, WINDOW_HEIGHT, CameraPos, CameraTarget, CameraUp);
 
 float FOV = 90.0f;
 float nearZ = 1.0f;
@@ -39,14 +42,6 @@ struct Vertex
 		color = Vector3f(r, g, b);
 	}
 };
-
-void KeyboardCB(unsigned char key, int mouseX, int mouseY) {
-	MainCamera.OnKeyBoard(key);
-}
-
-void SpecialKeyboardCB(int key, int mouseX, int mouseY) {
-	MainCamera.OnKeyBoard(key);
-}
 
 void CreateVertexBuffer() {
 	Vertex vertices[8];
@@ -196,6 +191,8 @@ void Transformation() {
 void RenderSceneCB() {
 	glClear(GL_COLOR_BUFFER_BIT);
 
+	MainCamera.OnRender();
+
 	Transformation();
 
 	glBindBuffer(GL_ARRAY_BUFFER, VBO);
@@ -221,6 +218,26 @@ void RenderSceneCB() {
 	glutPostRedisplay();
 }
 
+void KeyboardCB(unsigned char key, int mouseX, int mouseY) {
+	MainCamera.OnKeyBoard(key);
+}
+
+void SpecialKeyboardCB(int key, int mouseX, int mouseY) {
+	MainCamera.OnKeyBoard(key);
+}
+
+void PassiveMouseCB(int x, int y)
+{
+	MainCamera.OnMouse(x, y);
+}
+
+void initializeGlutCallbacks() {
+	glutDisplayFunc(RenderSceneCB);
+	glutKeyboardFunc(KeyboardCB);
+	glutSpecialFunc(SpecialKeyboardCB);
+	glutPassiveMotionFunc(PassiveMouseCB);
+}
+
 int main(int argc, char** argv) {
 	//set seed for random func
 	srand(GetCurrentProcessId());
@@ -230,6 +247,12 @@ int main(int argc, char** argv) {
 	glutInitWindowSize(WINDOW_WIDTH, WINDOW_HEIGHT);
 	glutInitWindowPosition(200, 100);
 	glutCreateWindow("OpenGL");
+
+	char game_mode_string[64];
+	// Game mode string example: <Width>x<Height>@<FPS>
+	snprintf(game_mode_string, sizeof(game_mode_string), "%dx%d@60", WINDOW_WIDTH, WINDOW_HEIGHT);
+	glutGameModeString(game_mode_string);
+	glutEnterGameMode();
 
 	GLenum res = glewInit();
 	if (res != GLEW_OK) {
@@ -247,9 +270,7 @@ int main(int argc, char** argv) {
 	CreateIndexBuffer();
 	InitializeProgram();
 
-	glutDisplayFunc(RenderSceneCB);
-	glutKeyboardFunc(KeyboardCB);
-	glutSpecialFunc(SpecialKeyboardCB);
+	initializeGlutCallbacks();
 	glutMainLoop();
 
 	return 0;
