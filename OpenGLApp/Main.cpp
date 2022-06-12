@@ -6,6 +6,7 @@
 #include <vector>
 #include <helper.h>
 #include <ogldev_math_3d.h>
+#include <assimp/scene.h>
 
 #include "camera.h"
 #include "WorldTransform.h"
