@@ -8,6 +8,7 @@
 
 #include "camera.h"
 #include "WorldTransform.h"
+#include "Texture.h"
 
 #define WINDOW_WIDTH  960
 #define WINDOW_HEIGHT 540
@@ -15,6 +16,8 @@
 GLuint VBO;
 GLuint IBO;
 GLint gMatrixLocation;
+GLint gSamplerLocation;
+Texture* pTexture = NULL;
 
 WorldTransform CubeTransform;
 Vector3f CameraPos(0.0f, 0.0f, -1.0f);
@@ -30,30 +33,32 @@ PersProjInfo persProjInfo = { FOV, WINDOW_WIDTH, WINDOW_HEIGHT, nearZ, farZ };
 struct Vertex
 {
 	Vector3f pos;
-	Vector3f color;
+	Vector2f tex;
 
 	Vertex(){}
 
-	Vertex(float x, float y, float z) {
-		pos = Vector3f(x, y, z);
-		float r = (float)rand() / (float)RAND_MAX;
-		float g = (float)rand() / (float)RAND_MAX;
-		float b = (float)rand() / (float)RAND_MAX;
-		color = Vector3f(r, g, b);
+	Vertex(const Vector3f& _pos, const Vector2f& _tex) {
+		pos = _pos;
+		tex = _tex;
 	}
 };
 
 void CreateVertexBuffer() {
 	Vertex vertices[8];
 
-	vertices[0] = Vertex( 0.5f,  0.5f,  0.5f);
-	vertices[1] = Vertex(-0.5f,  0.5f, -0.5f);
-	vertices[2] = Vertex(-0.5f,  0.5f,  0.5f);
-	vertices[3] = Vertex( 0.5f, -0.5f, -0.5f);
-	vertices[4] = Vertex(-0.5f, -0.5f, -0.5f);
-	vertices[5] = Vertex( 0.5f,  0.5f, -0.5f);
-	vertices[6] = Vertex( 0.5f, -0.5f,  0.5f);
-	vertices[7] = Vertex(-0.5f, -0.5f,  0.5f);
+	Vector2f t00 = Vector2f(0.0f, 0.0f);  // Bottom left
+	Vector2f t01 = Vector2f(0.0f, 1.0f);  // Top left
+	Vector2f t10 = Vector2f(1.0f, 0.0f);  // Bottom right
+	Vector2f t11 = Vector2f(1.0f, 1.0f);  // Top right
+
+	vertices[0] = Vertex(Vector3f(0.5f, 0.5f, 0.5f), t00);
+	vertices[1] = Vertex(Vector3f(-0.5f, 0.5f, -0.5f), t01);
+	vertices[2] = Vertex(Vector3f(-0.5f, 0.5f, 0.5f), t10);
+	vertices[3] = Vertex(Vector3f(0.5f, -0.5f, -0.5f), t11);
+	vertices[4] = Vertex(Vector3f(-0.5f, -0.5f, -0.5f), t00);
+	vertices[5] = Vertex(Vector3f(0.5f, 0.5f, -0.5f), t10);
+	vertices[6] = Vertex(Vector3f(0.5f, -0.5f, 0.5f), t01);
+	vertices[7] = Vertex(Vector3f(-0.5f, -0.5f, 0.5f), t11);
 
 	glGenBuffers(1, &VBO);
 	glBindBuffer(GL_ARRAY_BUFFER, VBO);
@@ -138,7 +143,13 @@ GLuint CreateProgram(const std::vector<GLuint>& shaderList) {
 	//compiler will allocate the indices of the uniform at link time
 	gMatrixLocation = glGetUniformLocation(program, "gMatrix");
 	if (gMatrixLocation == -1) {
-		fprintf(stderr, "Error getting uniform location 'gTranslation'\n");
+		fprintf(stderr, "Error getting uniform location 'gMatrix'\n");
+		exit(1);
+	}
+
+	gSamplerLocation = glGetUniformLocation(program, "gSampler");
+	if (gSamplerLocation == -1) {
+		printf("Error getting uniform location of 'gSampler'\n");
 		exit(1);
 	}
 
@@ -198,15 +209,18 @@ void RenderSceneCB() {
 	glBindBuffer(GL_ARRAY_BUFFER, VBO);
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, IBO);
 
+	pTexture->Bind(GL_TEXTURE0);
+	glUniform1i(gSamplerLocation, 0);
+
 	//position
 	glEnableVertexAttribArray(0);
 	//stride: 3 floats of position + 3 floats of color
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), 0);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(Vertex), 0);
 
 	//color
 	glEnableVertexAttribArray(1);
 	//offset: start after 3 floats of position
-	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6 * sizeof(float), (void*)(3 * sizeof(float)));
+	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, sizeof(Vertex), (void*)(3 * sizeof(float)));
 
 	//draw using index buffer: 12 triangle ~ 36 indices
 	glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, 0);
@@ -269,6 +283,11 @@ int main(int argc, char** argv) {
 	CreateVertexBuffer();
 	CreateIndexBuffer();
 	InitializeProgram();
+
+	pTexture = new Texture(GL_TEXTURE_2D, "../Content/bricks.jpg");
+	if (!pTexture->Load()) {
+		return 1;
+	}
 
 	initializeGlutCallbacks();
 	glutMainLoop();
